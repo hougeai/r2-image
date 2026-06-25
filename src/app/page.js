@@ -1,11 +1,10 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { faImages, faTrashAlt, faUpload, faSearchPlus } from '@fortawesome/free-solid-svg-icons';
+import { faImages, faTrashAlt, faUpload, faSearchPlus, faSignOutAlt, faLock } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ToastContainer } from "react-toastify";
 import { toast } from "react-toastify";
-import { useEffect } from 'react';
 import Footer from '@/components/Footer'
 import LoadingOverlay from "@/components/LoadingOverlay";
 
@@ -14,28 +13,87 @@ export default function Home() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploadedFilesNum, setUploadedFilesNum] = useState(0);
-  const [selectedImage, setSelectedImage] = useState(null); // 添加状态用于跟踪选中的放大图片
+  const [selectedImage, setSelectedImage] = useState(null);
   const [activeTab, setActiveTab] = useState('preview');
   const [uploading, setUploading] = useState(false);
   const [IP, setIP] = useState('');
   const [boxType, setBoxtype] = useState("img");
 
+  // 登录态
+  const [authenticated, setAuthenticated] = useState(false);
+  const [requireAuth, setRequireAuth] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [password, setPassword] = useState('');
+  const [loggingIn, setLoggingIn] = useState(false);
+
   let headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
   }
-  useEffect(() => {
-    ip();
-  }, []);
 
   const parentRef = useRef(null);
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch(`/api/auth/check`);
+      const data = await res.json();
+      setRequireAuth(data.requireAuth);
+      if (!data.requireAuth || data.authenticated) {
+        setAuthenticated(true);
+        ip();
+      }
+    } catch (error) {
+      console.error('检查登录态出错:', error);
+    } finally {
+      setCheckingAuth(false);
+    }
+  };
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoggingIn(true);
+    try {
+      const res = await fetch(`/api/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setAuthenticated(true);
+        setPassword('');
+        toast.success('登录成功');
+        ip();
+      } else {
+        toast.error(data.message || '登录失败');
+      }
+    } catch (error) {
+      toast.error('登录请求失败');
+    } finally {
+      setLoggingIn(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`/api/logout`, { method: 'POST' });
+      setAuthenticated(false);
+      setUploadedImages([]);
+      setSelectedFiles([]);
+      toast.success('已登出');
+    } catch (error) {
+      toast.error('登出失败');
+    }
+  };
 
   const ip = async () => {
     try {
       const res = await fetch(`/api/ip`, {
         method: "GET",
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
       const data = await res.json();
       setIP(data.ip);
@@ -48,11 +106,9 @@ export default function Home() {
     const newFiles = event.target.files;
     const filteredFiles = Array.from(newFiles).filter(file =>
       !selectedFiles.find(selFile => selFile.name === file.name));
-    // 过滤掉已经在 uploadedImages 数组中存在的文件
     const uniqueFiles = filteredFiles.filter(file =>
       !uploadedImages.find(upImg => upImg.name === file.name)
     );
-
     setSelectedFiles([...selectedFiles, ...uniqueFiles]);
   };
 
@@ -62,14 +118,11 @@ export default function Home() {
 
   const getTotalSizeInMB = (files) => {
     const totalSizeInBytes = Array.from(files).reduce((acc, file) => acc + file.size, 0);
-    return (totalSizeInBytes / (1024 * 1024)).toFixed(2); // 转换为MB并保留两位小数
+    return (totalSizeInBytes / (1024 * 1024)).toFixed(2);
   };
-
-
 
   const handleUpload = async (file = null) => {
     setUploading(true);
-
     const filesToUpload = file ? [file] : selectedFiles;
 
     if (filesToUpload.length === 0) {
@@ -83,7 +136,6 @@ export default function Home() {
     try {
       for (const file of filesToUpload) {
         const formData = new FormData();
-
         formData.append("file", file);
 
         try {
@@ -95,29 +147,26 @@ export default function Home() {
 
           if (response.ok) {
             const result = await response.json();
-            // console.log(result);
-
             file.url = result.url;
-
-            // 更新 uploadedImages 和 selectedFiles
             setUploadedImages((prevImages) => [...prevImages, file]);
             setSelectedFiles((prevFiles) => prevFiles.filter(f => f !== file));
             successCount++;
           } else {
-            // 尝试从响应中提取错误信息
             let errorMsg;
             try {
               const errorData = await response.json();
               errorMsg = errorData.message || `上传 ${file.name} 图片时出错`;
             } catch (jsonError) {
-              // 如果解析 JSON 失败，使用默认错误信息
               errorMsg = `上传 ${file.name} 图片时发生未知错误`;
             }
 
-            // 细化状态码处理
             switch (response.status) {
               case 400:
                 toast.error(`请求无效: ${errorMsg}`);
+                break;
+              case 401:
+                toast.error(`未登录: ${errorMsg}`);
+                setAuthenticated(false);
                 break;
               case 403:
                 toast.error(`上传被拒绝: ${errorMsg}`);
@@ -127,9 +176,6 @@ export default function Home() {
                 break;
               case 500:
                 toast.error(`服务器错误: ${errorMsg}`);
-                break;
-              case 401:
-                toast.error(`未授权: ${errorMsg}`);
                 break;
               default:
                 toast.error(`上传 ${file.name} 图片时出错: ${errorMsg}`);
@@ -141,8 +187,9 @@ export default function Home() {
       }
 
       setUploadedFilesNum(uploadedFilesNum + successCount);
-      toast.success(`已成功上传 ${successCount} 张图片`);
-
+      if (successCount > 0) {
+        toast.success(`已成功上传 ${successCount} 张图片`);
+      }
     } catch (error) {
       console.error('上传过程中出现错误:', error);
       toast.error('上传错误');
@@ -151,18 +198,14 @@ export default function Home() {
     }
   };
 
-
-
-
   const handlePaste = (event) => {
     const clipboardItems = event.clipboardData.items;
-
     for (let i = 0; i < clipboardItems.length; i++) {
       const item = clipboardItems[i];
       if (item.kind === 'file' && item.type.includes('image')) {
         const file = item.getAsFile();
         setSelectedFiles([...selectedFiles, file]);
-        break; // 只处理第一个文件
+        break;
       }
     }
   };
@@ -170,7 +213,6 @@ export default function Home() {
   const handleDrop = (event) => {
     event.preventDefault();
     const files = event.dataTransfer.files;
-
     if (files.length > 0) {
       const filteredFiles = Array.from(files).filter(file => !selectedFiles.find(selFile => selFile.name === file.name));
       setSelectedFiles([...selectedFiles, ...filteredFiles]);
@@ -181,15 +223,12 @@ export default function Home() {
     event.preventDefault();
   };
 
-  // 根据图片数量动态计算容器高度
   const calculateMinHeight = () => {
     const rows = Math.ceil(selectedFiles.length / 4);
     return `${rows * 100}px`;
   };
 
-  // 处理点击图片放大
   const handleImageClick = (index) => {
-
     if (selectedFiles[index].type.startsWith('image/')) {
       setBoxtype("img");
     } else if (selectedFiles[index].type.startsWith('video/')) {
@@ -197,7 +236,6 @@ export default function Home() {
     } else {
       setBoxtype("other");
     }
-
     setSelectedImage(URL.createObjectURL(selectedFiles[index]));
   };
 
@@ -225,7 +263,6 @@ export default function Home() {
     try {
       await navigator.clipboard.writeText(values.join("\n"));
       toast.success(`链接复制成功`);
-
     } catch (error) {
       toast.error(`链接复制失败\n${error}`)
     }
@@ -235,7 +272,6 @@ export default function Home() {
     setBoxtype(type);
     setSelectedImage(imageUrl);
   };
-
 
   const renderFile = (data, index) => {
     const fileUrl = data.url;
@@ -249,7 +285,6 @@ export default function Home() {
           onClick={() => handlerenderImageClick(fileUrl, "img")}
         />
       );
-
     } else if (data.type.startsWith('video/')) {
       return (
         <video
@@ -262,9 +297,7 @@ export default function Home() {
           Your browser does not support the video tag.
         </video>
       );
-
     } else {
-      // 其他文件类型
       return (
         <img
           key={`image-${index}`}
@@ -275,11 +308,7 @@ export default function Home() {
         />
       );
     }
-
-
-
   };
-
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -306,7 +335,6 @@ export default function Home() {
                   ))}
                 </div>
               </div>
-
             ))}
           </div>
         );
@@ -355,31 +383,79 @@ export default function Home() {
     }
   };
 
+  // 检查登录态中
+  if (checkingAuth) {
+    return (
+      <main className="h-screen flex items-center justify-center">
+        <div className="text-gray-500">加载中...</div>
+      </main>
+    );
+  }
 
+  // 未登录：显示登录界面
+  if (!authenticated) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-full max-w-sm px-6 py-12">
+          <div className="text-center mb-8">
+            <FontAwesomeIcon icon={faLock} className="text-4xl text-blue-500 mb-4" />
+            <h1 className="text-2xl font-bold text-gray-800">图床登录</h1>
+            <p className="text-sm text-gray-500 mt-2">请输入密码以上传图片</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="密码"
+              autoFocus
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              disabled={loggingIn}
+              className={`w-full py-2 text-white rounded-lg ${loggingIn ? 'bg-blue-300' : 'bg-blue-500 hover:bg-blue-600'}`}
+            >
+              {loggingIn ? '登录中...' : '登录'}
+            </button>
+          </form>
+        </div>
+        <ToastContainer />
+      </main>
+    );
+  }
+
+  // 已登录：显示上传界面
   return (
     <main className=" overflow-auto h-full flex w-full min-h-screen flex-col items-center justify-between">
       <header className="fixed top-0 h-[50px] left-0 w-full border-b bg-white flex z-50 justify-center items-center">
         <nav className="flex justify-between items-center w-full max-w-4xl px-4">图床</nav>
+        {requireAuth && (
+          <button
+            onClick={handleLogout}
+            className="mr-4 px-3 py-1 text-sm text-gray-600 hover:text-red-500 flex items-center"
+          >
+            <FontAwesomeIcon icon={faSignOutAlt} className="mr-1" />
+            登出
+          </button>
+        )}
       </header>
       <div className="mt-[60px] w-9/10 sm:w-9/10 md:w-9/10 lg:w-9/10 xl:w-3/5 2xl:w-2/3">
 
         <div className="flex flex-row">
           <div className="flex flex-col">
-            <div className="text-gray-800 text-lg">图片或视频上传
-            </div>
+            <div className="text-gray-800 text-lg">图片或视频上传</div>
             <div className="mb-4 text-sm text-gray-500">
               上传文件最大 5 MB; 你访问本站的IP是：<span className="text-cyan-600">{IP}</span>
             </div>
           </div>
-
-
         </div>
         <div
           className="border-2 border-dashed border-slate-400 rounded-md relative"
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onPaste={handlePaste}
-          style={{ minHeight: calculateMinHeight() }} // 动态设置最小高度
+          style={{ minHeight: calculateMinHeight() }}
         >
           <div className="flex flex-wrap gap-3 min-h-[240px]">
             <LoadingOverlay loading={uploading} />
@@ -421,7 +497,6 @@ export default function Home() {
                   </button>
                   <button
                     className="bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer mx-2"
-
                     onClick={() => handleUpload(file)}
                   >
                     <FontAwesomeIcon icon={faUpload} />
@@ -430,17 +505,13 @@ export default function Home() {
               </div>
             ))}
 
-
             {selectedFiles.length === 0 && (
               <div className="absolute -z-10 left-0 top-0 w-full h-full flex items-center justify-center">
-
                 <div className="text-gray-500">
-
                   拖拽文件到这里或将屏幕截图复制并粘贴到此处上传
                 </div>
               </div>
             )}
-
           </div>
         </div>
         <div className="w-full rounded-md shadow-sm overflow-hidden mt-4 grid grid-cols-8">
@@ -485,10 +556,8 @@ export default function Home() {
           </div>
         </div>
 
-
         <ToastContainer />
         <div className="w-full mt-4 min-h-[200px] mb-[60px] ">
-
           {
             uploadedImages.length > 0 && (<>
               <div className="flex flex-wrap gap-3 mb-4 border-b border-gray-300 ">
@@ -523,7 +592,6 @@ export default function Home() {
             )
           }
         </div>
-
       </div>
       {selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseImage}>
@@ -552,18 +620,14 @@ export default function Home() {
                 controls
               />
             ) : boxType === "other" ? (
-              // 这里可以渲染你想要的其他内容或组件
               <div className="p-4 bg-white text-black rounded">
                 <p>Unsupported file type</p>
               </div>
             ) : (
-              // 你可以选择一个默认的内容或者返回 null
               <div>未知类型</div>
             )}
           </div>
-
         </div>
-
       )}
 
       <div className="fixed inset-x-0 bottom-0 h-[50px] bg-slate-200  w-full  flex  z-50 justify-center items-center ">

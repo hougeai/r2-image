@@ -1,5 +1,6 @@
 export const runtime = 'edge';
 import { getRequestContext } from '@cloudflare/next-on-pages';
+import { isAuthenticated } from '@/lib/auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,6 +11,19 @@ const corsHeaders = {
 
 export async function POST(request) {
   const { env } = getRequestContext();
+
+  // 鉴权：配置了 UPLOAD_PASSWORD 时需登录才能上传
+  const authed = await isAuthenticated(request, env);
+  if (!authed) {
+    return Response.json({
+      status: 401,
+      message: `未登录，请先登录`,
+      success: false
+    }, {
+      status: 401,
+      headers: corsHeaders,
+    });
+  }
 
   if (!env.IMGRS) {
     return Response.json({

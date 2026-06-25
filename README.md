@@ -43,6 +43,18 @@
 > 代码中通过 `env.IMGRS` 访问 R2 桶，因此变量名称必须为 `IMGRS`，否则上传/读取会报 `IMGRS is not Set`。
 
 
+### 配置上传登录密码（推荐，防止他人上传）
+
+在 Cloudflare Pages 项目 `设置` -> `环境变量` 中配置：
+
+| 变量名称 | 值 | 说明 |
+| ----------- | ----------- | ----------- |
+| `UPLOAD_PASSWORD` | 你的密码 | 上传密码，未配置时使用默认密码 `pw`；建议部署后修改为自己的密码 |
+| `AUTH_SECRET` | 随机字符串 | 可选，用于签名登录 token，不配则用 `UPLOAD_PASSWORD` 派生 |
+
+> 登录态通过 httpOnly cookie 缓存在浏览器，有效期 365 天，同一浏览器下次打开无需重新登录。已上传图片的 URL 仍保持公开可访问（否则图片无法展示）。
+
+
 ### 配置鉴黄 API（可选，防止上传违规图片）
 
 在 Cloudflare Pages 项目 `设置` -> `环境变量` 中配置以下任一变量即可开启图片内容审查，违规图片（rating 为 3）会在上传时被自动拒绝并从 R2 删除：
@@ -123,8 +135,11 @@ npm run start
 
 | 路径 | 方法 | 说明 |
 | ----------- | ----------- | ----------- |
-| `/api/upload` | POST | 上传图片/文件，返回 JSON，其中 `url` 为访问地址 |
-| `/api/rfile/{filename}` | GET | 通过文件名访问 R2 中的文件（带边缘缓存） |
+| `/api/upload` | POST | 上传图片/文件，返回 JSON，其中 `url` 为访问地址（配置 `UPLOAD_PASSWORD` 后需登录） |
+| `/api/rfile/{filename}` | GET | 通过文件名访问 R2 中的文件（带边缘缓存，公开访问） |
+| `/api/login` | POST | 登录，body: `{"password":"密码"}`，成功写入登录 cookie |
+| `/api/logout` | POST | 登出，清除登录 cookie |
+| `/api/auth/check` | GET | 检查登录态，返回 `{requireAuth, authenticated}` |
 
 上传成功返回示例：
 
