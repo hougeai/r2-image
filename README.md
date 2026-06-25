@@ -1,105 +1,137 @@
-# telegraph-Image
+# telegraph-Image (R2 版)
 
-> 旧版在[static](https://github.com/x-dr/telegraph-Image/tree/static)分支
-
-
-### Demo
-
-[https://img.131213.xyz](https://img.131213.xyz)
-
-### 测试
-[https://telegraph-image-e49.pages.dev/](https://telegraph-image-e49.pages.dev/)
-
-```
-测试管理员账号：admin
-测试管理员密码：admin
-
-测试普通用户：user
-测试普通用户：user
-
-```
-
-
-
+> 基于 Cloudflare Pages + Cloudflare R2 对象存储的图床，仅保留上传图片并获取 URL 的核心功能。
 
 ### 优点
 
 1. 无限图片储存数量，你可以上传不限数量的图片
 
-2. 无需购买服务器，托管于Cloudflare的网络上，当使用量不超过Cloudflare的免费额度时，完全免费
+2. 无需购买服务器，托管于 Cloudflare 的网络上，当使用量不超过 Cloudflare 的免费额度时，完全免费
 
-3. 无需购买域名，可以使用Cloudflare Pages提供的*.pages.dev的免费二级域名，同时也支持绑定自定义域名
+3. 无需购买域名，可以使用 Cloudflare Pages 提供的 `*.pages.dev` 的免费二级域名，同时也支持绑定自定义域名
 
-4. 支持图片审查API，可根据需要开启，开启后不良图片将自动屏蔽，不再加载
-
-5. 支持后台图片管理，日志管理，查看访问前20的Referer、IP、img,可以对上传的图片进行在线预览，添加白名单，黑名单等操作
+4. 图片直接存储在 Cloudflare R2 对象存储中，访问稳定可控
 
 
+### 利用 Cloudflare Pages 部署
 
-### 利用Cloudflare pages部署
+1. 点击 [Use this template](https://github.com/x-dr/telegraph-Image/generate) 按钮创建一个新的代码库。
 
+2. 登录到 [Cloudflare](https://dash.cloudflare.com/) 控制台。
 
+3. 在帐户主页中，选择 `pages` > `Create a project` > `Connect to Git`。
 
-1. 点击[Use this template](https://github.com/x-dr/telegraph-Image/generate)按钮创建一个新的代码库。
+4. 选择你创建的项目存储库，在 `Set up builds and deployments` 部分中，`Framework preset(框架)` 选 `Next.js` 即可。
 
-2. 登录到[Cloudflare](https://dash.cloudflare.com/)控制台.
-3. 在帐户主页中，选择`pages`> ` Create a project` > `Connect to Git`
+5. 点击 `Save and Deploy` 部署。
 
-4. 选择你创建的项目存储库，在`Set up builds and deployments`部分中，`Framework preset(框架)`选`Next.js`即可。
+6. 设置兼容性标志：前往后台依次点击 `设置` -> `函数` -> `兼容性标志` -> `配置生产兼容性标志`，填写 `nodejs_compat`。
 
-<img src="./docs/img/nextjsimages1.png"   height="50%" width="50%"/>
+7. 绑定 R2 存储桶（见下方 [配置 R2 对象存储](#配置-r2-对象存储)）。
 
-5. 点击`Save and Deploy`部署 。
-
-6. [设置环境变量&开启图片管理功能](./docs/manage.md)
-
-7. 设置兼容性标志，前往后台依次点击`设置`->`函数`->`兼容性标志`->`配置生产兼容性标志` 填写 `nodejs_compat`
-
-<img src="./docs/img/image2.png"   height="50%" width="50%"/>
-
-8. 前往后台点击`部署` 找到最新的一次部署点`重试部署`。
-
-<img src="./docs/img/image3.png"   height="50%" width="50%"/>
+8. 前往后台点击 `部署`，找到最新的一次部署点 `重试部署`（绑定 R2 与兼容性标志后需重新部署才能生效）。
 
 
+### 配置 R2 对象存储
+
+1. 在 Cloudflare 控制台创建一个 R2 存储桶（例如 `img`）。
+
+2. 进入你的 Pages 项目，前往后台依次点击 `设置` -> `函数` -> `R2 存储桶绑定` -> `编辑绑定`。
+
+3. `变量名称` 填写 `IMGRS`，`R2 存储桶` 选择你刚才创建的存储桶，保存。
+
+> 代码中通过 `env.IMGRS` 访问 R2 桶，因此变量名称必须为 `IMGRS`，否则上传/读取会报 `IMGRS is not Set`。
 
 
-> 环境变量
+### 配置鉴黄 API（可选，防止上传违规图片）
 
-| 变量名称      | 值 | type |
+在 Cloudflare Pages 项目 `设置` -> `环境变量` 中配置以下任一变量即可开启图片内容审查，违规图片（rating 为 3）会在上传时被自动拒绝并从 R2 删除：
+
+| 变量名称 | 值 | 说明 |
 | ----------- | ----------- | ----------- |
-|PROXYALLIMG  | 反向代理所有图片（默认为false）| boolean |
-|BASIC_USER   | 后台管理页面登录用户名称| string |
-|BASIC_PASS   | 后台管理页面登录用户密码| string |
-|ENABLE_AUTH_API   | 是否开启访客验证 （默认为false）| boolean |
-|REGULAR_USER | 普通用户 （访客验证）| string |
-|REGULAR_PASS   | 普通用户密码| string |
-|ModerateContentApiKey   | 审查图像内容的API key| string |
-|RATINGAPI     | [自建的鉴黄api](https://github.com/x-dr/nsfwjs-api) | string |
-|CUSTOM_DOMAIN | https://your-custom-domain.com (自定义加速域名) | string |
-|TG_BOT_TOKEN  | 123468:AAxxxGKrn5 (从 [@BotFather](https://t.me/BotFather)) |string |
-|TG_CHAT_ID   | -1234567 (频道的ID,TG Bot要是该频道或群组的管理员) |string |
+| `ModerateContentApiKey` | 你的 API key | 注册地址 [https://moderatecontent.com/](https://moderatecontent.com/)，免费 |
+| `RATINGAPI` | `https://你的域名/rating` | 自建鉴黄 API（部署见下方） |
 
-> TG_BOT_TOKEN
-
-<a href="https://img.131213.xyz/api/file/02735b83dbdcf5fe31a45.png" target="_blank"><img src="https://img.131213.xyz/api/file/02735b83dbdcf5fe31a45.png" height="50%" width="50%"></a>
-
-> 获取ID机器人 [@VersaToolsBot](https://t.me/VersaToolsBot)
-
-> `TG_CHAT_ID`为目标对话的唯一标`ID`或目标频道的用户名（eg: @channelusername），当目标对话为个人或私有频道是只能是`ID`,当为公开频道或群组是可以为目标频道的用户名（eg: `@channelusername`）
+> 优先级：`RATINGAPI` > `ModerateContentApiKey`。两者都未配置时跳过鉴黄直接上传；鉴黄服务异常时也不拦截，避免误杀。
 
 
+#### 自建鉴黄 API（nsfwjs-api）
+
+[nswfjs-api](https://github.com/x-dr/nsfwjs-api) 基于 TensorFlow + NSFWJS，可自建部署。⚠️ **注意：由于依赖 `@tensorflow/tfjs-node`（原生 C++ 模块），打包后约 111.7MB，无法部署到 Cloudflare Workers（不支持原生模块/体积限制）和 Vercel（Serverless 函数上限 50MB）。推荐用 Docker 部署到自有服务器或免费容器平台。**
+
+##### 方式一：Docker 部署（推荐）
+
+```bash
+# 1. 拉取镜像
+docker pull gindex/nsfwjs-api:latest
+
+# 2. 运行容器（端口 3035）
+docker run -itd \
+  --name nsfwjs \
+  -p 3035:3035 \
+  --restart=always \
+  gindex/nsfwjs-api:latest
+
+# 3. 访问 http://你的IP:3035/ 测试是否启动
+```
+
+部署好后，在 Cloudflare Pages 配置环境变量：
+- `RATINGAPI` = `http://你的IP:3035`
+
+> 免费方案对比（均能跑，但都有**休眠机制**，可靠性不及自有 VPS）：
+>
+> | 平台 | 免费额度 | 休眠机制 | 说明 |
+> | ----------- | ----------- | ----------- | ----------- |
+> | [Hugging Face Spaces](https://huggingface.co/spaces) | 永久免费 CPU Basic（2vCPU/16GB/50GB） | 长时间无人访问会休眠 | 支持 Docker，免费额度最大方 |
+> | [Render](https://render.com/) | 每月 750 小时免费实例 | 15 分钟无流量休眠，重启约 1 分钟 | 仅适合测试/业余项目，非"永久无限" |
+>
+> ⚠️ **休眠机制对鉴黄的影响**：图床非高频访问，鉴黄 API 易长时间空闲而休眠。此时用户上传图片会触发鉴黄 API 冷启动（约 1 分钟），上传可能超时；而本图床"鉴黄服务异常不拦截"的逻辑会导致休眠期间上传的违规图片漏过。**对鉴黄可靠性有要求请用自有 VPS（Docker 常驻）。**
+>
+> 此外，鉴黄 API 需通过 URL 拉取图片，所以部署位置必须能被图床从公网访问（不能是纯内网）。
+
+##### 方式二：源码部署
+
+```bash
+# 需要 Node.js 20.x
+git clone https://github.com/x-dr/nsfw-api.git
+cd nsfw-api
+npm install
+npm rebuild @tensorflow/tfjs-node --build-from-source
+npm run start
+# 访问 http://你的IP:3035/
+```
+
+##### API 返回示例
+
+```json
+{
+  "Neutral": 0.985,
+  "Drawing": 0.007,
+  "Porn": 0.004,
+  "Hentai": 0.002,
+  "Sexy": 0.0001,
+  "url": "图片地址",
+  "status": 200,
+  "rating": 1
+}
+```
+
+`rating` 字段：`1`=无害 / `2`=性感 / `3`=色情（图床仅对 `3` 拦截）。
 
 
-### Star History
+### 接口说明
 
-[![Star History Chart](https://api.star-history.com/svg?repos=x-dr/telegraph-Image&type=Date)](https://star-history.com/#x-dr/telegraph-Image&Date)
+| 路径 | 方法 | 说明 |
+| ----------- | ----------- | ----------- |
+| `/api/upload` | POST | 上传图片/文件，返回 JSON，其中 `url` 为访问地址 |
+| `/api/rfile/{filename}` | GET | 通过文件名访问 R2 中的文件（带边缘缓存） |
 
+上传成功返回示例：
 
-
-
-
-
-
-[![Powered by DartNode](https://dartnode.com/branding/DN-Open-Source-sm.png)](https://dartnode.com "Powered by DartNode - Free VPS for Open Source")
-
+```json
+{
+  "url": "https://你的域名/api/rfile/xxx.png",
+  "code": 200,
+  "name": "xxx.png"
+}
+```

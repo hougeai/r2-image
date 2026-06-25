@@ -1,6 +1,5 @@
 "use client";
-import { useState, useRef, useCallback } from "react";
-import { signOut } from "next-auth/react"
+import { useState, useRef } from "react";
 import Image from "next/image";
 import { faImages, faTrashAlt, faUpload, faSearchPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,18 +7,7 @@ import { ToastContainer } from "react-toastify";
 import { toast } from "react-toastify";
 import { useEffect } from 'react';
 import Footer from '@/components/Footer'
-import Link from "next/link";
 import LoadingOverlay from "@/components/LoadingOverlay";
-
-
-const LoginButton = ({ onClick, href, children }) => (
-  <button
-    onClick={onClick}
-    className="px-4 py-2 mx-2 w-28 sm:w-28 md:w-20 lg:w-16 xl:w-16 2xl:w-20 bg-blue-500 text-white rounded"
-  >
-    {children}
-  </button>
-);
 
 
 export default function Home() {
@@ -30,100 +18,31 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('preview');
   const [uploading, setUploading] = useState(false);
   const [IP, setIP] = useState('');
-  const [Total, setTotal] = useState('?');
-  const [selectedOption, setSelectedOption] = useState('tgchannel'); // 初始选择第一个选项
-  const [isAuthapi, setisAuthapi] = useState(false); // 初始选择第一个选项
-  const [Loginuser, setLoginuser] = useState(''); // 初始选择第一个选项
   const [boxType, setBoxtype] = useState("img");
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
-
-
-  const parentRef = useRef(null);
-
-
-
-
-
-
   let headers = {
-
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36",
-
   }
   useEffect(() => {
     ip();
-    getTotal();
-    isAuth();
-
-
   }, []);
+
+  const parentRef = useRef(null);
+
   const ip = async () => {
     try {
-
       const res = await fetch(`/api/ip`, {
         method: "GET",
         headers: {
           'Content-Type': 'application/json'
         }
-
       });
       const data = await res.json();
       setIP(data.ip);
-
-
-
     } catch (error) {
       console.error('请求出错:', error);
     }
   };
-  const isAuth = async () => {
-    try {
-
-      const res = await fetch(`/api/enableauthapi/isauth`, {
-        method: "GET",
-        headers: {
-          'Content-Type': 'application/json'
-        }
-
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setisAuthapi(true)
-        setLoginuser(data.role)
-
-      } else {
-        setisAuthapi(false)
-        setSelectedOption("58img")
-      }
-
-
-
-    } catch (error) {
-      console.error('请求出错:', error);
-    }
-  };
-
-  const getTotal = async () => {
-    try {
-
-      const res = await fetch(`/api/total`, {
-        method: "GET",
-        headers: {
-          'Content-Type': 'application/json'
-        }
-
-      });
-      const data = await res.json();
-      setTotal(data.total);
-
-
-
-    } catch (error) {
-      console.error('请求出错:', error);
-    }
-  }
 
   const handleFileChange = (event) => {
     const newFiles = event.target.files;
@@ -139,8 +58,6 @@ export default function Home() {
 
   const handleClear = () => {
     setSelectedFiles([]);
-    setUploadStatus('');
-    // setUploadedImages([]);
   };
 
   const getTotalSizeInMB = (files) => {
@@ -161,22 +78,16 @@ export default function Home() {
       return;
     }
 
-    const formFieldName = selectedOption === "tencent" ? "media" : "file";
     let successCount = 0;
 
     try {
       for (const file of filesToUpload) {
         const formData = new FormData();
 
-        formData.append(formFieldName, file);
+        formData.append("file", file);
 
         try {
-          const targetUrl = selectedOption === "tgchannel" || selectedOption === "r2"
-            ? `/api/enableauthapi/${selectedOption}`
-            : `/api/${selectedOption}`;
-
-          // const response = await fetch("https://img.131213.xyz/api/tencent", {
-          const response = await fetch(targetUrl, {
+          const response = await fetch(`/api/upload`, {
             method: 'POST',
             body: formData,
             headers: headers
@@ -209,7 +120,7 @@ export default function Home() {
                 toast.error(`请求无效: ${errorMsg}`);
                 break;
               case 403:
-                toast.error(`无权限访问资源: ${errorMsg}`);
+                toast.error(`上传被拒绝: ${errorMsg}`);
                 break;
               case 404:
                 toast.error(`资源未找到: ${errorMsg}`);
@@ -239,7 +150,6 @@ export default function Home() {
       setUploading(false);
     }
   };
-
 
 
 
@@ -303,7 +213,6 @@ export default function Home() {
   const handleCopy = async (text) => {
     try {
       await navigator.clipboard.writeText(text);
-      // alert('已成功复制到剪贴板');
       toast.success(`链接复制成功`);
     } catch (err) {
       toast.error("链接复制失败")
@@ -409,7 +318,7 @@ export default function Home() {
                 <code className=" w-2 break-all">{`<img src="${data.url}" alt="${data.name}" />`}</code>
               </div>
             ))}
-          </div >
+          </div>
         );
       case 'markdownLinks':
         return (
@@ -446,47 +355,11 @@ export default function Home() {
     }
   };
 
-  const handleSelectChange = (e) => {
-    setSelectedOption(e.target.value); // 更新选择框的值
-  };
-
-
-  const handleSignOut = () => {
-    signOut({ callbackUrl: '/' });
-  };
-
-  const renderButton = () => {
-    if (!isAuthapi) {
-      return (
-        <Link href="/login">
-          <LoginButton>登录</LoginButton>
-        </Link>
-      );
-    }
-    switch (Loginuser) {
-      case 'user':
-        return <LoginButton onClick={handleSignOut}>登出</LoginButton>;
-      case 'admin':
-        return (
-          <Link href="/admin">
-            <LoginButton>管理</LoginButton>
-          </Link>
-        );
-      default:
-        return (
-          <Link href="/login">
-            <LoginButton>登录</LoginButton>
-          </Link>
-        );
-    }
-  };
-
 
   return (
     <main className=" overflow-auto h-full flex w-full min-h-screen flex-col items-center justify-between">
       <header className="fixed top-0 h-[50px] left-0 w-full border-b bg-white flex z-50 justify-center items-center">
         <nav className="flex justify-between items-center w-full max-w-4xl px-4">图床</nav>
-        {renderButton()}
       </header>
       <div className="mt-[60px] w-9/10 sm:w-9/10 md:w-9/10 lg:w-9/10 xl:w-3/5 2xl:w-2/3">
 
@@ -495,23 +368,8 @@ export default function Home() {
             <div className="text-gray-800 text-lg">图片或视频上传
             </div>
             <div className="mb-4 text-sm text-gray-500">
-              上传文件最大 5 MB;本站已托管 <span className="text-cyan-600">{Total}</span> 张图片; 你访问本站的IP是：<span className="text-cyan-600">{IP}</span>
+              上传文件最大 5 MB; 你访问本站的IP是：<span className="text-cyan-600">{IP}</span>
             </div>
-          </div>
-          <div className="flex  flex-col sm:flex-col   md:w-auto lg:flex-row xl:flex-row  2xl:flex-row  mx-auto items-center  ">
-            <span className=" text-lg sm:text-sm   md:text-sm lg:text-xl xl:text-xl  2xl:text-xl">上传接口：</span>
-            <select
-              value={selectedOption} // 将选择框的值绑定到状态中的 selectedOption
-              onChange={handleSelectChange} // 当选择框的值发生变化时触发 handleSelectChange 函数
-              className="text-lg p-2 border  rounded text-center w-auto sm:w-auto md:w-auto lg:w-auto xl:w-auto  2xl:w-36">
-              <option value="tg" >TG(会失效)</option>
-              <option value="tgchannel">TG_Channel</option>
-              <option value="r2">R2</option>
-              {/* <option value="vviptuangou">vviptuangou</option> */}
-              <option value="58img">58img</option>
-              {/* <option value="tencent">tencent</option> */}
-
-            </select>
           </div>
 
 
@@ -619,8 +477,6 @@ export default function Home() {
           <div className="md:col-span-1 col-span-5">
             <div
               className={`w-full bg-green-500 cursor-pointer h-10 flex items-center justify-center text-white ${uploading ? 'pointer-events-none opacity-50' : ''}`}
-              // className={`bg-green-500 text-white rounded-full w-6 h-6 flex items-center justify-center cursor-pointer mx-2 ${uploading ? 'pointer-events-none opacity-50' : ''}`}
-
               onClick={() => handleUpload()}
             >
               <FontAwesomeIcon icon={faUpload} style={{ width: '20px', height: '20px' }} className="mr-2" />
