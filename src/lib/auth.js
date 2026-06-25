@@ -2,6 +2,16 @@ export const COOKIE_NAME = 'img_auth';
 const COOKIE_MAX_AGE = 365 * 24 * 60 * 60; // 365天，单位秒
 const DEFAULT_PASSWORD = 'pw'; // 未配置 UPLOAD_PASSWORD 时使用的默认密码
 
+// 兼容获取 env：Cloudflare edge 环境用 getRequestContext().env，本地 dev 用 process.env
+export async function getEnv() {
+  try {
+    const { getRequestContext } = await import('@cloudflare/next-on-pages');
+    return getRequestContext().env;
+  } catch {
+    return process.env;
+  }
+}
+
 // 获取上传密码：未配置则用默认密码 pw
 export function getPassword(env) {
   return env.UPLOAD_PASSWORD || DEFAULT_PASSWORD;

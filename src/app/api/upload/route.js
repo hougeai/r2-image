@@ -1,6 +1,5 @@
 export const runtime = 'edge';
-import { getRequestContext } from '@cloudflare/next-on-pages';
-import { isAuthenticated } from '@/lib/auth';
+import { getEnv, isAuthenticated } from '@/lib/auth';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -10,7 +9,7 @@ const corsHeaders = {
 };
 
 export async function POST(request) {
-  const { env } = getRequestContext();
+  const env = await getEnv();
 
   // 鉴权：配置了 UPLOAD_PASSWORD 时需登录才能上传
   const authed = await isAuthenticated(request, env);
@@ -53,7 +52,16 @@ export async function POST(request) {
   }
 
   const fileType = file.type;
-  const filename = file.name;
+  const rawName = file.name;
+
+  // 生成唯一文件名：sh-yyyyMMddHHmmss + 3位随机数，避免同名覆盖（如截图都是 image.png）
+  const dotIndex = rawName.lastIndexOf('.');
+  const ext = dotIndex > 0 ? rawName.slice(dotIndex) : '';
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const filename = `sh-${ts}${rand}${ext}`;
 
   const header = new Headers();
   header.set("content-type", fileType);

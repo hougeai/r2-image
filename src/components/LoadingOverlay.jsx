@@ -5,8 +5,8 @@ const LoadingOverlay = ({ loading }) => {
   if (!loading) return null;
 
   return (
-    <div className="backdrop-blur-sm left-0 top-0 h-full w-full absolute flex items-center justify-center z-50 cursor-not-allowed">
-      <FontAwesomeIcon icon={faSpinner} className="text-4xl text-gray-400 animate-spin" />
+    <div className="backdrop-blur-sm left-0 top-0 h-full w-full absolute flex items-center justify-center z-50 cursor-not-allowed bg-white/60 rounded-2xl">
+      <FontAwesomeIcon icon={faSpinner} className="text-4xl text-cyan-600 animate-spin" />
     </div>
   );
 };

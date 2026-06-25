@@ -1,11 +1,11 @@
 export const runtime = 'edge';
-import { getRequestContext } from '@cloudflare/next-on-pages';
+import { getEnv } from '@/lib/auth';
 import { signToken, buildCookieHeader, getPassword } from '@/lib/auth';
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
 export async function POST(request) {
-  const { env } = getRequestContext();
+  const env = await getEnv();
 
   let body;
   try {

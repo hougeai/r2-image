@@ -6,15 +6,13 @@ import 'react-toastify/ReactToastify.min.css';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "图床",
-  description: "图床",
+  title: "r2-image · 图床",
+  description: "基于 Cloudflare Pages + R2 的图床",
 };
-
-
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body className={inter.className}>{children}</body>
     </html>
   );

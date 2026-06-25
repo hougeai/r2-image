@@ -1,8 +1,16 @@
-# telegraph-Image (R2 版)
+# r2-image
 
-> 基于 Cloudflare Pages + Cloudflare R2 对象存储的图床，仅保留上传图片并获取 URL 的核心功能。
+> 基于 Cloudflare Pages + Cloudflare R2 对象存储的图床，仅保留上传图片并获取 URL 的核心功能，支持上传密码鉴权与可选的内容审查。
 
-### 优点
+## 效果预览
+
+| 登录页 | 上传页 |
+| ----------- | ----------- |
+| ![登录页](./docs/img/preview-login.png) | ![上传页](./docs/img/preview-upload.png) |
+
+---
+
+## 优点
 
 1. 无限图片储存数量，你可以上传不限数量的图片
 
@@ -12,38 +20,48 @@
 
 4. 图片直接存储在 Cloudflare R2 对象存储中，访问稳定可控
 
+5. 支持上传密码鉴权，防止他人上传；可选内容审查，拦截违规图片
 
-### 利用 Cloudflare Pages 部署
 
-1. 点击 [Use this template](https://github.com/x-dr/telegraph-Image/generate) 按钮创建一个新的代码库。
+## 利用 Cloudflare Pages 部署
+
+1. 点击 [Fork](https://github.com/hougeai/r2-image/fork) 按钮将 [hougeai/r2-image](https://github.com/hougeai/r2-image) 复制到你自己的账号下。
 
 2. 登录到 [Cloudflare](https://dash.cloudflare.com/) 控制台。
 
 3. 在帐户主页中，选择 `pages` > `Create a project` > `Connect to Git`。
 
-4. 选择你创建的项目存储库，在 `Set up builds and deployments` 部分中，`Framework preset(框架)` 选 `Next.js` 即可。
+   ![创建 Pages 项目](./docs/img/deploy-pages.png)
+
+4. 选择你 fork 的项目存储库，在 `Set up builds and deployments` 部分中，`Framework preset(框架)` 选 `Next.js` 即可。
+    ![配置 Pages 项目](./docs/img/nextjsimages1.png)
 
 5. 点击 `Save and Deploy` 部署。
 
-6. 设置兼容性标志：前往后台依次点击 `设置` -> `函数` -> `兼容性标志` -> `配置生产兼容性标志`，填写 `nodejs_compat`。
+6. 设置兼容性标志：前往后台依次点击 `设置` -> `运行时` -> `兼容性标志` -> `配置生产兼容性标志`，填写 `nodejs_compat`。
+
+   ![兼容性标志](./docs/img/deploy-compat.png)
 
 7. 绑定 R2 存储桶（见下方 [配置 R2 对象存储](#配置-r2-对象存储)）。
 
-8. 前往后台点击 `部署`，找到最新的一次部署点 `重试部署`（绑定 R2 与兼容性标志后需重新部署才能生效）。
+8. 配置环境变量（见下方 [配置上传登录密码](#配置上传登录密码推荐防止他人上传) 与 [配置鉴黄 API](#配置鉴黄-api可选防止上传违规图片)）。
+
+9.  前往后台点击 `部署`，或者找到最新的一次部署点 `重试部署`（绑定 R2、兼容性标志、环境变量后需重新部署才能生效）。
 
 
-### 配置 R2 对象存储
+## 配置 R2 对象存储
 
 1. 在 Cloudflare 控制台创建一个 R2 存储桶（例如 `img`）。
 
-2. 进入你的 Pages 项目，前往后台依次点击 `设置` -> `函数` -> `R2 存储桶绑定` -> `编辑绑定`。
+2. 进入你的 Pages 项目，前往后台依次点击 `设置` -> `绑定` -> `添加`。
 
 3. `变量名称` 填写 `IMGRS`，`R2 存储桶` 选择你刚才创建的存储桶，保存。
 
 > 代码中通过 `env.IMGRS` 访问 R2 桶，因此变量名称必须为 `IMGRS`，否则上传/读取会报 `IMGRS is not Set`。
 
+  ![R2 绑定](./docs/img/deploy-r2-bind.png)
 
-### 配置上传登录密码（推荐，防止他人上传）
+## 配置上传登录密码（推荐，防止他人上传）
 
 在 Cloudflare Pages 项目 `设置` -> `环境变量` 中配置：
 
@@ -54,8 +72,7 @@
 
 > 登录态通过 httpOnly cookie 缓存在浏览器，有效期 365 天，同一浏览器下次打开无需重新登录。已上传图片的 URL 仍保持公开可访问（否则图片无法展示）。
 
-
-### 配置鉴黄 API（可选，防止上传违规图片）
+## 配置鉴黄 API（可选，防止上传违规图片）
 
 在 Cloudflare Pages 项目 `设置` -> `环境变量` 中配置以下任一变量即可开启图片内容审查，违规图片（rating 为 3）会在上传时被自动拒绝并从 R2 删除：
 
@@ -67,11 +84,11 @@
 > 优先级：`RATINGAPI` > `ModerateContentApiKey`。两者都未配置时跳过鉴黄直接上传；鉴黄服务异常时也不拦截，避免误杀。
 
 
-#### 自建鉴黄 API（nsfwjs-api）
+### 自建鉴黄 API（nsfwjs-api）
 
 [nswfjs-api](https://github.com/x-dr/nsfwjs-api) 基于 TensorFlow + NSFWJS，可自建部署。⚠️ **注意：由于依赖 `@tensorflow/tfjs-node`（原生 C++ 模块），打包后约 111.7MB，无法部署到 Cloudflare Workers（不支持原生模块/体积限制）和 Vercel（Serverless 函数上限 50MB）。推荐用 Docker 部署到自有服务器或免费容器平台。**
 
-##### 方式一：Docker 部署（推荐）
+#### 方式一：Docker 部署（推荐）
 
 ```bash
 # 1. 拉取镜像
@@ -101,7 +118,7 @@ docker run -itd \
 >
 > 此外，鉴黄 API 需通过 URL 拉取图片，所以部署位置必须能被图床从公网访问（不能是纯内网）。
 
-##### 方式二：源码部署
+#### 方式二：源码部署
 
 ```bash
 # 需要 Node.js 20.x
@@ -113,7 +130,7 @@ npm run start
 # 访问 http://你的IP:3035/
 ```
 
-##### API 返回示例
+#### API 返回示例
 
 ```json
 {
@@ -131,7 +148,7 @@ npm run start
 `rating` 字段：`1`=无害 / `2`=性感 / `3`=色情（图床仅对 `3` 拦截）。
 
 
-### 接口说明
+## 接口说明
 
 | 路径 | 方法 | 说明 |
 | ----------- | ----------- | ----------- |
@@ -150,3 +167,8 @@ npm run start
   "name": "xxx.png"
 }
 ```
+
+
+## 致谢
+
+本项目基于 [x-dr/telegraph-Image](https://github.com/x-dr/telegraph-Image) 改造，精简为仅使用 Cloudflare R2 对象存储的图床，感谢原作者的开源贡献。
