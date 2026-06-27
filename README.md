@@ -169,6 +169,33 @@ npm run start
 ```
 
 
+## AI 助手技能（Skills）
+
+项目根目录下的 [`skills/`](./skills) 文件夹内置了 AI Agent 技能包，无需额外编写——直接交给 AI 编程工具加载即可使用。集成后，你只需用自然语言对 AI 说"把这张图片上传到图床"，Agent 就会自动调用技能完成上传并返回 URL。
+
+### 如何使用
+
+1. **加载技能**：将本项目的 [`skills/`](./skills) 目录接入你的 AI 编程工具即可，各工具会自行识别并按其中的 `SKILL.md` 指令执行。
+
+2. **配置环境变量**（AI Agent 运行时需要读取）：
+
+| 变量 | 说明 |
+|------|------|
+| `R2_IMAGE_BASE_URL` | 图床域名，如 `https://xxx.pages.dev` |
+| `R2_IMAGE_PASSWORD` | 上传密码（即 Cloudflare Pages 中配置的 `UPLOAD_PASSWORD`） |
+
+```bash
+export R2_IMAGE_BASE_URL="https://your-site.pages.dev"
+export R2_IMAGE_PASSWORD="your-password"
+```
+
+3. **开始使用**：在 AI 编程工具中直接说，例如：
+   - "把 `./screenshot.png` 上传到图床"
+   - "上传这张图片并给出访问链接"
+
+Agent 会自动登录图床、上传图片，返回形如 `https://你的域名/api/rfile/xxx.png` 的公开访问 URL。
+
+
 ## 致谢
 
 本项目基于 [x-dr/telegraph-Image](https://github.com/x-dr/telegraph-Image) 改造，精简为仅使用 Cloudflare R2 对象存储的图床，感谢原作者的开源贡献。
