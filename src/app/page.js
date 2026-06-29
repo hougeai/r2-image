@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { faImages, faTrashAlt, faUpload, faSearchPlus, faSignOutAlt, faCopy, faCheck, faCloudArrowUp, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ToastContainer } from "react-toastify";
@@ -390,13 +391,22 @@ export default function Home() {
           <FontAwesomeIcon icon={faCloudArrowUp} className="text-xl text-cyan-600" />
           <span className="text-slate-800 font-semibold tracking-tight">r2-image</span>
         </div>
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-500 hover:text-cyan-600 bg-white border border-slate-200 card-hover rounded-lg cursor-pointer transition-colors duration-200"
-        >
-          <FontAwesomeIcon icon={faSignOutAlt} className="text-xs" />
-          登出
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/list"
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-500 hover:text-cyan-600 bg-white border border-slate-200 card-hover rounded-lg cursor-pointer transition-colors duration-200"
+          >
+            <FontAwesomeIcon icon={faImages} className="text-xs" />
+            图片管理
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-3 py-1.5 text-sm text-slate-500 hover:text-cyan-600 bg-white border border-slate-200 card-hover rounded-lg cursor-pointer transition-colors duration-200"
+          >
+            <FontAwesomeIcon icon={faSignOutAlt} className="text-xs" />
+            登出
+          </button>
+        </div>
       </header>
 
       {/* 上传区域 */}

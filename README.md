@@ -61,6 +61,8 @@
 | `/api/login` | POST | 登录，body: `{"password":"密码"}`，成功写入登录 cookie |
 | `/api/logout` | POST | 登出，清除登录 cookie |
 | `/api/auth/check` | GET | 检查登录态，返回 `{requireAuth, authenticated}` |
+| `/api/list` | GET | 列出 R2 中所有文件，需登录；支持游标分页 `?cursor=xxx&limit=100` |
+| `/api/delete` | DELETE | 删除文件，需登录；body: `{"names":["xxx.png", ...]}`，支持批量 |
 
 上传成功返回示例：
 
