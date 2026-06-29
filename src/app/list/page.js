@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCloudArrowUp, faSignOutAlt, faTrashAlt, faArrowLeft, faCheck, faCopy, faSearchPlus, faSpinner, faImages } from '@fortawesome/free-solid-svg-icons';
+import { faCloudArrowUp, faSignOutAlt, faTrashAlt, faArrowLeft, faCheck, faCopy, faSpinner, faImages } from '@fortawesome/free-solid-svg-icons';
 import { ToastContainer, toast } from "react-toastify";
 import Footer from '@/components/Footer';
 import LoadingOverlay from "@/components/LoadingOverlay";
@@ -268,7 +268,7 @@ export default function ListPage() {
                       {/* 选中勾选 */}
                       <button
                         onClick={(e) => { e.stopPropagation(); toggleSelect(img.name); }}
-                        className={`absolute top-2 left-2 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200 ${selected.has(img.name) ? 'bg-cyan-500 text-white' : 'bg-white/80 text-transparent hover:bg-white group-hover:text-slate-400'}`}
+                        className={`absolute top-2 left-2 w-6 h-6 rounded-md flex items-center justify-center cursor-pointer transition-all duration-200 ${selected.has(img.name) ? 'bg-cyan-500 text-white shadow' : 'bg-white/80 text-transparent border border-slate-300 shadow-sm hover:bg-white group-hover:text-slate-400'}`}
                         aria-label="选择"
                       >
                         <FontAwesomeIcon icon={faCheck} className="text-xs" />
@@ -277,14 +277,14 @@ export default function ListPage() {
                       <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
                           onClick={(e) => { e.stopPropagation(); copyUrl(img.name); }}
-                          className="w-6 h-6 rounded-md bg-white/80 hover:bg-white text-slate-500 hover:text-cyan-600 flex items-center justify-center cursor-pointer transition-colors duration-200"
+                          className="w-6 h-6 rounded-md bg-white/80 hover:bg-white border border-slate-300 shadow-sm text-slate-500 hover:text-cyan-600 flex items-center justify-center cursor-pointer transition-colors duration-200"
                           aria-label="复制链接"
                         >
                           <FontAwesomeIcon icon={copiedName === img.name ? faCheck : faCopy} className="text-xs" />
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDelete(img.name); }}
-                          className="w-6 h-6 rounded-md bg-white/80 hover:bg-white text-slate-500 hover:text-red-500 flex items-center justify-center cursor-pointer transition-colors duration-200"
+                          className="w-6 h-6 rounded-md bg-white/80 hover:bg-white border border-slate-300 shadow-sm text-slate-500 hover:text-red-500 flex items-center justify-center cursor-pointer transition-colors duration-200"
                           aria-label="删除"
                         >
                           <FontAwesomeIcon icon={faTrashAlt} className="text-xs" />

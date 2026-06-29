@@ -82,7 +82,7 @@ export async function GET(request, { params }) {
   } catch (error) {
     return Response.json({
       status: 500,
-      message: ` ${error.message}`,
+      message: `${error.message}`,
       success: false
     }, {
       status: 500,

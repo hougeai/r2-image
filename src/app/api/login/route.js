@@ -1,6 +1,5 @@
 export const runtime = 'edge';
-import { getEnv } from '@/lib/auth';
-import { signToken, buildCookieHeader, getPassword } from '@/lib/auth';
+import { getEnv, signToken, buildCookieHeader, getPassword } from '@/lib/auth';
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 

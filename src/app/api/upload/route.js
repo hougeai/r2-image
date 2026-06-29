@@ -99,7 +99,7 @@ export async function POST(request) {
   } catch (error) {
     return Response.json({
       status: 500,
-      message: ` ${error.message}`,
+      message: `${error.message}`,
       success: false
     }, {
       status: 500,
@@ -107,7 +107,6 @@ export async function POST(request) {
     });
   }
 }
-
 
 // 鉴黄：优先使用 RATINGAPI，其次 ModerateContentApiKey；都未配置返回 0（跳过）
 async function getRating(env, url) {

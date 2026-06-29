@@ -92,14 +92,8 @@ export function parseCookies(cookieHeader) {
   return cookies;
 }
 
-// 是否需要鉴权（始终需要，未配密码则用默认密码 pw）
-export function requireAuth() {
-  return true;
-}
-
 // 当前请求是否已登录
 export async function isAuthenticated(request, env) {
-  if (!requireAuth(env)) return true;
   const cookies = parseCookies(request.headers.get('cookie'));
   return verifyToken(cookies[COOKIE_NAME], env);
 }

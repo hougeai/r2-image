@@ -1,11 +1,10 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { faImages, faTrashAlt, faUpload, faSearchPlus, faSignOutAlt, faCopy, faCheck, faCloudArrowUp, faEye, faEyeSlash } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { ToastContainer } from "react-toastify";
-import { toast } from "react-toastify";
+import { ToastContainer, toast } from "react-toastify";
 import Footer from '@/components/Footer'
 import LoadingOverlay from "@/components/LoadingOverlay";
 
@@ -26,8 +25,7 @@ export default function Home() {
   const [loggingIn, setLoggingIn] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
-
-  const parentRef = useRef(null);
+  const [clientIp, setClientIp] = useState('');
 
   useEffect(() => {
     checkAuth();
@@ -39,11 +37,22 @@ export default function Home() {
       const data = await res.json();
       if (data.authenticated) {
         setAuthenticated(true);
+        fetchIp();
       }
     } catch (error) {
       console.error('检查登录态出错:', error);
     } finally {
       setCheckingAuth(false);
+    }
+  };
+
+  const fetchIp = async () => {
+    try {
+      const res = await fetch(`/api/ip`);
+      const data = await res.json();
+      if (data.ip) setClientIp(data.ip);
+    } catch (error) {
+      console.error('获取IP出错:', error);
     }
   };
 
@@ -60,6 +69,7 @@ export default function Home() {
       if (res.ok && data.success) {
         setAuthenticated(true);
         setPassword('');
+        fetchIp();
         toast.success('登录成功');
       } else {
         toast.error(data.message || '登录失败');
@@ -284,7 +294,7 @@ export default function Home() {
 
     if (activeTab !== 'preview' && linkFormats.length > 0) {
       return (
-        <div ref={parentRef} className="card rounded-2xl p-4 space-y-2">
+        <div className="card rounded-2xl p-4 space-y-2">
           {linkFormats.map((text, i) => (
             <div
               key={i}
@@ -390,6 +400,9 @@ export default function Home() {
         <div className="flex items-center gap-2">
           <FontAwesomeIcon icon={faCloudArrowUp} className="text-xl text-cyan-600" />
           <span className="text-slate-800 font-semibold tracking-tight">r2-image</span>
+          {clientIp && (
+            <span className="hidden sm:inline text-xs text-slate-400 ml-2">IP: {clientIp}</span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Link
